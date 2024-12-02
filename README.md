@@ -190,3 +190,321 @@ Os CPFs dos pacientes são criptografados antes de serem salvos no banco, garant
    ```
 5. Abra um **pull request**.
 
+
+
+---
+
+### **Frontend - Clinica YOUX**
+
+---
+
+## **Descrição do Projeto**
+
+O **Frontend da Clinica YOUX** é uma aplicação desenvolvida com **React** que se comunica com o backend da clínica para realizar o gerenciamento de pacientes, incluindo o cadastro de novos pacientes, visualização de pacientes por estado, e exibição de um mapa com a distribuição dos pacientes.
+
+A autenticação é realizada via **Auth0** com OAuth2, e a aplicação oferece interações para **médicos** e **enfermeiros** gerenciarem as informações dos pacientes de maneira fácil e intuitiva.
+
+---
+
+## **Estrutura do Projeto**
+
+### **Diretórios Principais**
+
+- **`src`**: Diretório contendo todos os arquivos-fonte da aplicação.
+  - **`auth`**: Diretório com arquivos relacionados à autenticação.
+  - **`components`**: Componentes reutilizáveis para a interface do usuário.
+  - **`services`**: Arquivos relacionados à comunicação com o backend (API).
+  - **`views`**: Arquivos para as diferentes páginas da aplicação.
+  - **`__tests__`**: Contém os arquivos de teste para os componentes.
+
+---
+
+## **Principais Componentes**
+
+### **1. AuthProvider.js**
+O `AuthProvider` é um componente que gerencia o estado de autenticação na aplicação, usando o **Auth0** para login e logout. Ele utiliza o contexto do React para compartilhar o estado de autenticação entre os componentes.
+
+#### **Explicação do Código**:
+
+```javascript
+import { createContext, useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
+  const navigate = useNavigate();
+
+  const login = () => loginWithRedirect();  // Método para redirecionar o usuário ao login
+  const logoutUser = () => logout({ returnTo: window.location.origin });  // Método para logout
+
+  return (
+    <AuthContext.Provider value={{ login, logoutUser, user, isAuthenticated, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
+```
+
+- **`AuthProvider`**: Envolve a aplicação e fornece informações de autenticação para todos os componentes.
+- **`useAuth`**: Hook customizado para acessar o contexto de autenticação em outros componentes.
+
+---
+
+### **2. CadastroPaciente.js**
+O componente `CadastroPaciente` permite cadastrar um paciente no sistema. Ele usa o hook `useState` para armazenar os dados do paciente e `useEffect` para buscar os estados do Brasil.
+
+#### **Explicação do Código**:
+
+```javascript
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+
+const CadastroPaciente = () => {
+  const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [peso, setPeso] = useState('');
+  const [altura, setAltura] = useState('');
+  const [estado, setEstado] = useState('');
+  const [estados, setEstados] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchEstados = async () => {
+      try {
+        const response = await api.get('/estados');
+        setEstados(response.data);  // Armazena os estados na variável de estado
+      } catch (error) {
+        console.error('Erro ao carregar estados:', error);
+      }
+    };
+
+    fetchEstados();  // Carrega os estados ao montar o componente
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!nome || !cpf || !dataNascimento || !estado) {
+      setError('Todos os campos obrigatórios devem ser preenchidos.');
+      return;
+    }
+
+    try {
+      await api.post('/pacientes', { nome, cpf, dataNascimento, peso, altura, estado });  // Envia os dados para o backend
+      alert('Paciente cadastrado com sucesso!');
+    } catch (error) {
+      setError('Erro ao cadastrar paciente');
+    }
+  };
+
+  return (
+    <div>
+      <h2>Cadastro de Paciente</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <form onSubmit={handleSubmit}>
+        {/* Campos de formulário para dados do paciente */}
+        <button type="submit">Cadastrar</button>
+      </form>
+    </div>
+  );
+};
+
+export default CadastroPaciente;
+```
+
+- **useState**: Controla os dados do paciente no estado.
+- **useEffect**: Carrega os estados do Brasil quando o componente é montado.
+- **handleSubmit**: Função que envia os dados para o backend, validando os campos obrigatórios.
+
+---
+
+### **3. ListarPacientesPorEstado.js**
+Esse componente exibe uma lista de pacientes por estado, mostrando a quantidade de pacientes e sua localização geográfica.
+
+#### **Explicação do Código**:
+
+```javascript
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+const ListarPacientesPorEstado = () => {
+  const [pacientesPorEstado, setPacientesPorEstado] = useState([]);
+
+  useEffect(() => {
+    const fetchPacientes = async () => {
+      try {
+        const response = await axios.get("/api/pacientes/estados");
+        setPacientesPorEstado(response.data);  // Armazena os dados dos pacientes por estado
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao buscar pacientes por estado");
+      }
+    };
+
+    fetchPacientes();  // Executa a busca assim que o componente é montado
+  }, []);
+
+  return (
+    <div>
+      <h2>Pacientes por Estado</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Quantidade</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pacientesPorEstado.map((estado) => (
+            <tr key={estado.estado}>
+              <td>{estado.estado}</td>
+              <td>{estado.quantidade}</td>
+              <td>{estado.latitude}</td>
+              <td>{estado.longitude}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default ListarPacientesPorEstado;
+```
+
+- **useEffect**: Carrega os dados de pacientes por estado quando o componente é montado.
+- **Exibição dos Dados**: Exibe os pacientes por estado em uma tabela.
+
+---
+
+### **4. MapaPacientes.js**
+O componente `MapaPacientes` utiliza o **Leaflet** para exibir um mapa com marcadores dos pacientes distribuídos por estado.
+
+#### **Explicação do Código**:
+
+```javascript
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import api from '../services/api';
+
+const MapaPacientes = () => {
+  const [pacientesPorEstado, setPacientesPorEstado] = useState([]);
+
+  useEffect(() => {
+    const fetchDados = async () => {
+      try {
+        const response = await api.get('/pacientes/estados');
+        setPacientesPorEstado(response.data);  // Armazena os dados para renderizar os marcadores no mapa
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      }
+    };
+
+    fetchDados();  // Carrega os dados assim que o componente é montado
+  }, []);
+
+  return (
+    <div>
+      <h2>Mapa de Pacientes por Estado</h2>
+      <MapContainer center={[51.505, -0.09]} zoom={6} style={{ height: '400px' }}>
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {pacientesPorEstado.map((estado, index) => (
+          <Marker key={index} position={[estado.latitude, estado.longitude]}>
+            <Popup>
+              {estado.nome}: {estado.quantidade} pacientes
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  );
+};
+
+export default MapaPacientes;
+```
+
+- **MapContainer**: Cria o container para o mapa com o Leaflet.
+- **Marker**: Adiciona marcadores no mapa com base nos dados dos pacientes.
+
+---
+
+## **Testes**
+
+O projeto inclui testes para garantir a funcionalidade correta do formulário de cadastro de pacientes. Estes testes foram escritos usando o **Jest** e o **React Testing Library**.
+
+### **1. CadastroPaciente.test.js**
+
+Este arquivo contém testes unitários para o componente `CadastroPaciente`. Ele garante que o formulário de cadastro esteja funcionando corretamente, verificando a presença dos campos obrigatórios, o envio dos dados para a API e a validação de erros.
+
+#### **Testes Incluídos
+
+**:
+
+- **Renderização do Formulário**: Verifica se todos os campos obrigatórios estão presentes.
+- **Envio de Dados**: Verifica se a API é chamada corretamente com os dados do formulário.
+- **Validação de Campos**: Garante que o formulário não seja enviado se os campos obrigatórios estiverem vazios.
+- **Validação de CPF Único**: Simula um erro quando o CPF já está cadastrado e garante que a mensagem de erro seja exibida.
+
+```javascript
+it('deve enviar o formulário com dados válidos', async () => {
+  render(<CadastroPaciente />);
+  
+  fireEvent.change(screen.getByLabelText(/Nome/i), { target: { value: 'João Silva' } });
+  fireEvent.change(screen.getByLabelText(/CPF/i), { target: { value: '12345678901' } });
+  fireEvent.change(screen.getByLabelText(/Data de Nascimento/i), { target: { value: '1990-01-01' } });
+  fireEvent.change(screen.getByLabelText(/Estado/i), { target: { value: 'SP' } });
+  fireEvent.change(screen.getByLabelText(/Peso/i), { target: { value: '70' } });
+  fireEvent.change(screen.getByLabelText(/Altura/i), { target: { value: '1.75' } });
+  
+  fireEvent.click(screen.getByText(/Cadastrar/i));
+
+  await waitFor(() => {
+    expect(api.post).toHaveBeenCalledWith('/pacientes', expect.objectContaining({
+      nome: 'João Silva',
+      cpf: '12345678901',
+      dataNascimento: '1990-01-01',
+      estado: 'SP',
+      peso: '70',
+      altura: '1.75'
+    }));
+  });
+});
+```
+
+---
+
+Este **README** abrange os detalhes do frontend da **Clinica YOUX**, explicando cada parte do código, como a interação com o backend, a exibição de dados e a lógica dos testes.
+
+
+### **Resumo Detalhado do Projeto**
+
+**Backend (Clinica API)**  
+A **Clinica API** é desenvolvida em **Spring Boot** para gerenciar pacientes e usuários (médicos e enfermeiros).  
+- **Modelos**: Representam as entidades como **Usuario** e **Paciente**, com dados como CPF, nome, e informações de saúde.  
+- **Repositórios**: Interagem com o banco de dados, incluindo validação de CPF único e persistência de dados.  
+- **Serviços**: Contêm a lógica de negócios, como criar e validar pacientes.  
+- **Segurança**: Implementa autenticação com **OAuth2** e **Auth0**, usando **JWT** para gerenciar permissões e acessos.  
+- **Criptografia**: Utiliza **Jasypt** para garantir a segurança de dados sensíveis, como CPF.  
+- **Banco de Dados**: Usa **MySQL** para armazenar dados. O script SQL configura as tabelas e insere dados iniciais.
+
+**Frontend (Clinica YOUX)**  
+O frontend é feito em **React** e se comunica com o backend via API.  
+- **AuthProvider**: Gerencia o estado de autenticação usando **Auth0** e fornece login/logout para a aplicação.  
+- **CadastroPaciente**: Permite registrar novos pacientes, validando os campos obrigatórios e enviando os dados para o backend.  
+- **ListarPacientesPorEstado**: Exibe pacientes agrupados por estado, mostrando a quantidade e localização.  
+- **MapaPacientes**: Usa **Leaflet** para mostrar a distribuição geográfica dos pacientes em um mapa interativo.  
+- **Testes**: Utiliza **Jest** e **React Testing Library** para validar a funcionalidade dos componentes, como o envio do formulário e a validação de erros.
+
+**Banco de Dados**  
+O banco é configurado com **MySQL** e contém tabelas para pacientes e usuários.  
+- **Tabelas**: Definem os campos para armazenar informações dos pacientes e usuários, incluindo dados como CPF, nome, e permissões.  
+- **Script SQL**: O arquivo `banco/db.sql` cria as tabelas e insere dados iniciais.  
+- **Segurança**: A criptografia do CPF é feita com **Jasypt**, garantindo que dados sensíveis sejam armazenados de forma segura.
+
