@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import CadastroPaciente from '../CadastroPaciente';
 import api from '../../services/api';
 
@@ -29,6 +29,8 @@ it('deve renderizar o formulário de cadastro corretamente', () => {
   expect(screen.getByLabelText(/CPF/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/Data de Nascimento/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/Estado/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Peso/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Altura/i)).toBeInTheDocument();
 });
 
 /**
@@ -52,15 +54,21 @@ it('deve enviar o formulário com dados válidos', async () => {
   fireEvent.change(screen.getByLabelText(/CPF/i), { target: { value: '12345678901' } });
   fireEvent.change(screen.getByLabelText(/Data de Nascimento/i), { target: { value: '1990-01-01' } });
   fireEvent.change(screen.getByLabelText(/Estado/i), { target: { value: 'SP' } });
+  fireEvent.change(screen.getByLabelText(/Peso/i), { target: { value: '70' } });
+  fireEvent.change(screen.getByLabelText(/Altura/i), { target: { value: '1.75' } });
 
   fireEvent.click(screen.getByText(/Cadastrar/i));
 
-  expect(api.post).toHaveBeenCalledWith('/pacientes', expect.objectContaining({
-    nome: 'João Silva',
-    cpf: '12345678901',
-    dataNascimento: '1990-01-01',
-    estado: 'SP',
-  }));
+  await waitFor(() => {
+    expect(api.post).toHaveBeenCalledWith('/pacientes', expect.objectContaining({
+      nome: 'João Silva',
+      cpf: '12345678901',
+      dataNascimento: '1990-01-01',
+      estado: 'SP',
+      peso: '70',
+      altura: '1.75'
+    }));
+  });
 });
 
 /**
@@ -72,5 +80,28 @@ it('não deve permitir enviar o formulário com campos obrigatórios vazios', ()
 
   fireEvent.click(screen.getByText(/Cadastrar/i));
 
+  // Verifica se a mensagem de erro é exibida quando os campos obrigatórios não estão preenchidos
   expect(screen.getByText(/Todos os campos obrigatórios devem ser preenchidos./i)).toBeInTheDocument();
+});
+
+/**
+ * Teste para verificar se o CPF é único e gera erro se o CPF já estiver cadastrado.
+ */
+it('deve mostrar erro se o CPF já estiver cadastrado', async () => {
+  // Simula uma resposta da API indicando que o CPF já existe
+  api.post.mockRejectedValueOnce({ response: { data: { message: 'CPF já cadastrado' } } });
+
+  render(<CadastroPaciente />);
+
+  fireEvent.change(screen.getByLabelText(/Nome/i), { target: { value: 'Maria Souza' } });
+  fireEvent.change(screen.getByLabelText(/CPF/i), { target: { value: '12345678901' } });
+  fireEvent.change(screen.getByLabelText(/Data de Nascimento/i), { target: { value: '1985-03-12' } });
+  fireEvent.change(screen.getByLabelText(/Estado/i), { target: { value: 'RJ' } });
+
+  fireEvent.click(screen.getByText(/Cadastrar/i));
+
+  // Espera até que a resposta da API seja processada e exibe a mensagem de erro
+  await waitFor(() => {
+    expect(screen.getByText(/CPF já cadastrado/i)).toBeInTheDocument();
+  });
 });
