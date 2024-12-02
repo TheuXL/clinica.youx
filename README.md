@@ -6,7 +6,7 @@
 
 A **Clinica API** é um sistema backend desenvolvido em **Spring Boot** para gerenciar operações de uma clínica, incluindo gerenciamento de pacientes, usuários (médicos e enfermeiros), autenticação e autorização via OAuth2 (integrado com Auth0), e armazenamento seguro de dados sensíveis como CPF.
 
-( "Para quem for analisar o teste, leve em consideração que, infelizmente, por conta de problemas pessoais, eu não consegui desenvolver o projeto 100%, mas dei o meu melhor para mostrar minhas habilidades e, ao mesmo tempo, apresentar minha forma de pensar e como foi minha ideia para desenvolver este projeto. Deixei tudo bem detalhado para facilitar a compreensão, Agradeço a compreenção" )
+( "Para quem for analisar o teste, leve em consideração que, infelizmente, por conta de problemas pessoais, eu não tive tempo suficiente para desenvolver o projeto 100%, mas dei o meu melhor para mostrar minhas habilidades e, ao mesmo tempo, apresentar minha forma de pensar e como foi minha ideia para desenvolver este projeto. Deixei tudo bem detalhado para facilitar a compreensão, Agradeço a compreenção" )
 
 ---
 
