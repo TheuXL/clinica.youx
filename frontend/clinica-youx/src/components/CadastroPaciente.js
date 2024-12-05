@@ -11,9 +11,9 @@ const CadastroPaciente = () => {
   const [estado, setEstado] = useState('');
   const [estados, setEstados] = useState([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Carregar os estados do Brasil usando o serviço do IBGE
     const fetchEstados = async () => {
       try {
         const response = await api.get('/estados');
@@ -28,17 +28,28 @@ const CadastroPaciente = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
+
     if (!nome || !cpf || !dataNascimento || !estado) {
       setError('Todos os campos obrigatórios devem ser preenchidos.');
+      setLoading(false);
       return;
     }
 
     try {
-      // Enviar os dados para o backend
       await api.post('/pacientes', { nome, cpf, dataNascimento, peso, altura, estado });
       alert('Paciente cadastrado com sucesso!');
+      setNome('');
+      setCpf('');
+      setDataNascimento('');
+      setPeso('');
+      setAltura('');
+      setEstado('');
     } catch (error) {
       setError('Erro ao cadastrar paciente');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,7 +89,9 @@ const CadastroPaciente = () => {
             ))}
           </select>
         </div>
-        <button type="submit">Cadastrar</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Cadastrando...' : 'Cadastrar'}
+        </button>
       </form>
     </div>
   );

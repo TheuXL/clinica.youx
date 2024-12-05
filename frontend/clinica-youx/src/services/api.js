@@ -1,19 +1,18 @@
-// src/services/api.js
-import axios from 'axios';
+import axios from "axios";
 
-// Criação do Axios com a URL base da API
+// Configuração do Axios com URL base da API
 const api = axios.create({
-  baseURL: 'http://localhost:3000',  // Endereço do backend
+  baseURL: process.env.REACT_APP_API_URL, // Lê a URL da API do .env
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Adicionando token de autenticação OAuth 2
+// Interceptor para adicionar token de autenticação
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');  // Token armazenado no localStorage
+  const token = localStorage.getItem("token"); // Lê o token armazenado
   if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+    config.headers["Authorization"] = `Bearer ${token}`;
   }
   return config;
 });

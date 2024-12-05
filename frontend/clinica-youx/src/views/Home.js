@@ -7,7 +7,6 @@ const Home = () => {
     <div className="home-container">
       <h1>Bem-vindo à Clínica YOUX</h1>
       <p>Escolha uma das opções abaixo para continuar:</p>
-      
       <div className="home-buttons">
         <Link to="/cadastro" className="home-button">
           Cadastrar Paciente

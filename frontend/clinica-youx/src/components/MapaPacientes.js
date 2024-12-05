@@ -1,4 +1,3 @@
-// src/components/MapaPacientes.js
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import api from '../services/api';
@@ -19,10 +18,14 @@ const MapaPacientes = () => {
     fetchDados();
   }, []);
 
+  const center = pacientesPorEstado.length
+    ? [pacientesPorEstado[0].latitude, pacientesPorEstado[0].longitude]
+    : [-14.235, -51.9253];
+
   return (
     <div>
       <h2>Mapa de Pacientes por Estado</h2>
-      <MapContainer center={[51.505, -0.09]} zoom={6} style={{ height: '400px' }}>
+      <MapContainer center={center} zoom={4} style={{ height: '400px' }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {pacientesPorEstado.map((estado, index) => (
           <Marker key={index} position={[estado.latitude, estado.longitude]}>
